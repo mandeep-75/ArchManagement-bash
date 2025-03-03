@@ -8,8 +8,6 @@ A simple script to manage Arch Linux configurations using a terminal-based UI.
 ### Main UI  
 ![UI Preview](./screenshots/ui-preview.png)  
 
-### Application in Action  
-![App Running](./screenshots/app-running.png)  
 
 ## Installation
 
