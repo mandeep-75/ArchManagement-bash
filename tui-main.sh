@@ -25,19 +25,9 @@ HELP_UPDATE_SYSTEM="Update all system packages (pacman, AUR, and flatpak) to the
 HELP_UPDATE_PACMAN="Update only official Arch Linux packages from repositories using pacman. Safe way to keep core system components current."
 HELP_UPDATE_AUR="Update user packages from the Arch User Repository. Updates packages not found in official repositories."
 HELP_UPDATE_FLATPAK="Update all installed flatpak applications. Flatpaks are containerized applications that can be installed alongside native packages."
-HELP_INSTALL_PACMAN="Install a new package from official Arch repositories using pacman. Enter the exact package name after selection."
-HELP_REMOVE_PACMAN="Select and remove an installed official package along with its dependencies. Shows list of all installed official packages."
-HELP_SEARCH_PACMAN="Search official repositories for available packages. Helps you find exact names for installation."
-HELP_QUERY_PACMAN="Display detailed information about an installed package including version, dependencies, and description."
-HELP_LIST_PACMAN="View a complete list of all officially installed packages on your system from Arch repositories."
-HELP_INSTALL_AUR="Install a package from the Arch User Repository. Enter the exact AUR package name after selection."
-HELP_REMOVE_AUR="Select and remove an installed AUR package along with its dependencies. Shows all installed AUR packages."
-HELP_SEARCH_AUR="Search the Arch User Repository for available community packages. Helps find exact names for installation."
-HELP_LIST_AUR="View all installed packages from the Arch User Repository (AUR) on your system."
-HELP_INSTALL_FLATPAK="Install a new containerized application with flatpak. Enter the app ID after selection."
-HELP_REMOVE_FLATPAK="Uninstall a flatpak application. Shows a list of all installed flatpak apps for selection."
-HELP_SEARCH_FLATPAK="Search for available applications in flatpak repositories. Find exact application IDs for installation."
-HELP_LIST_FLATPAK="View all installed flatpak applications on your system with their versions and other details."
+HELP_MANAGE_PACMAN="Search for, install, or remove official Arch Linux packages using pacman."
+HELP_MANAGE_AUR="Search for, install, or remove user packages from the Arch User Repository."
+HELP_MANAGE_FLATPAK="Search for, install, or remove containerized applications using flatpak."
 HELP_INSTALL_GENERIC="Install the latest standard Linux kernel and headers. Good for most users with recent hardware."
 HELP_INSTALL_LTS="Install the long-term support Linux kernel. Provides stability for production systems with extended support timeline."
 HELP_INSTALL_ZEN="Install the Zen kernel optimized for desktop usage. Better responsiveness and lower latency for interactive tasks."
@@ -98,44 +88,14 @@ if [[ -n "$display_name" ]]; then
             "Update Flatpak")
                 echo "$HELP_UPDATE_FLATPAK"
                 ;;
-            "Install (Pacman)")
-                echo "$HELP_INSTALL_PACMAN"
+            "Manage Pacman")
+                echo "$HELP_MANAGE_PACMAN"
                 ;;
-            "Remove (Pacman)")
-                echo "$HELP_REMOVE_PACMAN"
+            "Manage AUR")
+                echo "$HELP_MANAGE_AUR"
                 ;;
-            "Search (Pacman)")
-                echo "$HELP_SEARCH_PACMAN"
-                ;;
-            "Info (Pacman)")
-                echo "$HELP_QUERY_PACMAN"
-                ;;
-            "List Installed (Pacman)")
-                echo "$HELP_LIST_PACMAN"
-                ;;
-            "Install (AUR)")
-                echo "$HELP_INSTALL_AUR"
-                ;;
-            "Remove (AUR)")
-                echo "$HELP_REMOVE_AUR"
-                ;;
-            "Search (AUR)")
-                echo "$HELP_SEARCH_AUR"
-                ;;
-            "List Installed (AUR)")
-                echo "$HELP_LIST_AUR"
-                ;;
-            "Install (Flatpak)")
-                echo "$HELP_INSTALL_FLATPAK"
-                ;;
-            "Remove (Flatpak)")
-                echo "$HELP_REMOVE_FLATPAK"
-                ;;
-            "Search (Flatpak)")
-                echo "$HELP_SEARCH_FLATPAK"
-                ;;
-            "List Installed (Flatpak)")
-                echo "$HELP_LIST_FLATPAK"
+            "Manage Flatpak")
+                echo "$HELP_MANAGE_FLATPAK"
                 ;;
             "Install Generic Kernel")
                 echo "$HELP_INSTALL_GENERIC"
@@ -204,9 +164,7 @@ EOF
 
     # Export all help variables
     export HELP_UPDATE_SYSTEM HELP_UPDATE_PACMAN HELP_UPDATE_AUR HELP_UPDATE_FLATPAK
-    export HELP_INSTALL_PACMAN HELP_REMOVE_PACMAN HELP_SEARCH_PACMAN HELP_QUERY_PACMAN HELP_LIST_PACMAN
-    export HELP_INSTALL_AUR HELP_REMOVE_AUR HELP_SEARCH_AUR HELP_LIST_AUR
-    export HELP_INSTALL_FLATPAK HELP_REMOVE_FLATPAK HELP_SEARCH_FLATPAK HELP_LIST_FLATPAK
+    export HELP_MANAGE_PACMAN HELP_MANAGE_AUR HELP_MANAGE_FLATPAK
     export HELP_INSTALL_GENERIC HELP_INSTALL_LTS HELP_INSTALL_ZEN HELP_UPDATE_KERNEL
     export HELP_BACKUP_REPOS HELP_RESTORE_REPOS HELP_UPDATE_MIRRORS HELP_REMOVE_BACKUPS
     export HELP_SYSTEM_CLEANUP HELP_RECENT_REMOVAL HELP_SERVICE_MANAGER HELP_SYSTEM_HEALTH
@@ -226,6 +184,36 @@ EOF
     echo "$choice"
 }
 
+# Function to search and select a package using fzf
+search_and_select_package() {
+    local pkg_manager="$1"
+    local search_cmd="$2"
+    local install_cmd="$3"
+
+    read -p "Enter package name to search: " pkg
+    [[ -z "$pkg" ]] && return
+
+    local results
+    case "$pkg_manager" in
+        "Pacman")
+            results=$(pacman -Ss "$pkg" | awk '/^[a-zA-Z0-9\-\.]+/ {print $1}' | fzf --prompt="Select a package to install > " --header="$HEADER_LINE" --border --margin=2,4 --layout=reverse --ansi --multi --tiebreak=index --height=100%)
+            ;;
+        "AUR")
+            results=$(yay -Ss "$pkg" | awk '/^[a-zA-Z0-9\-\.]+/ {print $1}' | fzf --prompt="Select a package to install > " --header="$HEADER_LINE" --border --margin=2,4 --layout=reverse --ansi --multi --tiebreak=index --height=100%)
+            ;;
+        "Flatpak")
+            results=$(flatpak search "$pkg" | awk '/^[a-zA-Z0-9\-\.]+/ {print $1}' | fzf --prompt="Select a package to install > " --header="$HEADER_LINE" --border --margin=2,4 --layout=reverse --ansi --multi --tiebreak=index --height=100%)
+            ;;
+    esac
+
+    if [[ -n "$results" ]]; then
+        selected_pkg=$(echo "$results" | head -n 1)
+        run_cmd "Install Package" "$install_cmd $selected_pkg"
+    else
+        echo "No packages found."
+    fi
+}
+
 # Rest of the script remains the same...
 
 while true; do
@@ -234,19 +222,9 @@ while true; do
     "Update Pacman              | Updates       | update pacman" \
     "Update AUR                 | Updates       | update aur" \
     "Update Flatpak             | Updates       | update flatpak" \
-    "Install (Pacman)           | Packages      | install pacman" \
-    "Remove (Pacman)            | Packages      | remove pacman" \
-    "Search (Pacman)            | Packages      | search pacman" \
-    "Info (Pacman)              | Packages      | info pacman" \
-    "List Installed (Pacman)    | Packages      | list pacman" \
-    "Install (AUR)              | Packages      | install aur" \
-    "Remove (AUR)               | Packages      | remove aur" \
-    "Search (AUR)               | Packages      | search aur" \
-    "List Installed (AUR)       | Packages      | list aur" \
-    "Install (Flatpak)          | Packages      | install flatpak" \
-    "Remove (Flatpak)           | Packages      | remove flatpak" \
-    "Search (Flatpak)           | Packages      | search flatpak" \
-    "List Installed (Flatpak)   | Packages      | list flatpak" \
+    "Manage Pacman              | Packages      | manage pacman" \
+    "Manage AUR                 | Packages      | manage aur" \
+    "Manage Flatpak             | Packages      | manage flatpak" \
     "Install Generic Kernel     | Kernel        | install generic" \
     "Install LTS Kernel         | Kernel        | install lts" \
     "Install Zen Kernel         | Kernel        | install zen" \
@@ -289,68 +267,122 @@ while true; do
         "Update Flatpak")
             run_cmd "Update Flatpak Packages" "flatpak update -y"
             ;;
-        "Install (Pacman)")
-            read -p "Enter package name to install: " pkg
-            [[ -z "$pkg" ]] && continue
-            run_cmd "Install Package" "sudo pacman -S --noconfirm $pkg"
-            ;;
-        "Remove (Pacman)")
+        "Manage Pacman")
             while true; do
-                selected=$(printf "Back\n%s" "$(pacman -Qqe)" | fzf_menu "Select a package to remove" "Back" $(pacman -Qqe))
-                [[ "$selected" == "Back" || -z "$selected" ]] && break
-                run_cmd "Remove Package" "sudo pacman -Rns --noconfirm $selected"
+                pkg_choice=$(fzf_menu "Manage Pacman Packages" \
+                    "Back                  | Return to Main Menu" \
+                    "Search Packages       | Search for available packages" \
+                    "Install Package       | Install a new package" \
+                    "Remove Package        | Remove an installed package" \
+                    "List Installed Packages| List all installed packages" \
+                    "Package Info          | Display detailed package info")
+
+                pkg_display_name=$(echo "$pkg_choice" | cut -d'|' -f1 | xargs)
+                case "$pkg_display_name" in
+                    "Back")
+                        break
+                        ;;
+                    "Search Packages")
+                        search_and_select_package "Pacman" "pacman -Ss" "sudo pacman -S --noconfirm"
+                        ;;
+                    "Install Package")
+                        read -p "Enter package name to install: " pkg
+                        [[ -z "$pkg" ]] && continue
+                        run_cmd "Install Package" "sudo pacman -S --noconfirm $pkg"
+                        ;;
+                    "Remove Package")
+                        selected=$(printf "Back\n%s" "$(pacman -Qqe)" | fzf_menu "Select a package to remove" "Back" $(pacman -Qqe))
+                        [[ "$selected" == "Back" || -z "$selected" ]] && continue
+                        run_cmd "Remove Package" "sudo pacman -Rns --noconfirm $selected"
+                        ;;
+                    "List Installed Packages")
+                        list_cmd "Installed Packages" "pacman -Qqe"
+                        ;;
+                    "Package Info")
+                        read -p "Enter package name: " pkg
+                        [[ -z "$pkg" ]] && continue
+                        list_cmd "Package Info" "pacman -Qi $pkg"
+                        ;;
+                esac
             done
             ;;
-        "Search (Pacman)")
-            search_package
-            ;;
-        "Info (Pacman)")
-            read -p "Enter package name: " pkg
-            [[ -z "$pkg" ]] && continue
-            list_cmd "Package Info" "pacman -Qi $pkg"
-            ;;
-        "List Installed (Pacman)")
-            list_cmd "Installed Packages" "pacman -Qqe"
-            ;;
-        "Install (AUR)")
-            read -p "Enter AUR package name to install: " pkg
-            [[ -z "$pkg" ]] && continue
-            run_cmd "Install AUR Package" "yay -S --noconfirm $pkg"
-            ;;
-        "Remove (AUR)")
+        "Manage AUR")
             while true; do
-                selected=$(printf "Back\n%s" "$(pacman -Qm | awk '{print $1}')" | fzf_menu "Select an AUR package to remove" "Back" $(pacman -Qm | awk '{print $1}'))
-                [[ "$selected" == "Back" || -z "$selected" ]] && break
-                run_cmd "Remove AUR Package" "yay -Rns --noconfirm $selected"
+                aur_choice=$(fzf_menu "Manage AUR Packages" \
+                    "Back                  | Return to Main Menu" \
+                    "Search Packages       | Search for available packages" \
+                    "Install Package       | Install a new package" \
+                    "Remove Package        | Remove an installed package" \
+                    "List Installed Packages| List all installed packages" \
+                    "Package Info          | Display detailed package info")
+
+                aur_display_name=$(echo "$aur_choice" | cut -d'|' -f1 | xargs)
+                case "$aur_display_name" in
+                    "Back")
+                        break
+                        ;;
+                    "Search Packages")
+                        search_and_select_package "AUR" "yay -Ss" "yay -S --noconfirm"
+                        ;;
+                    "Install Package")
+                        read -p "Enter AUR package name to install: " pkg
+                        [[ -z "$pkg" ]] && continue
+                        run_cmd "Install AUR Package" "yay -S --noconfirm $pkg"
+                        ;;
+                    "Remove Package")
+                        selected=$(printf "Back\n%s" "$(pacman -Qm | awk '{print $1}')" | fzf_menu "Select an AUR package to remove" "Back" $(pacman -Qm | awk '{print $1}'))
+                        [[ "$selected" == "Back" || -z "$selected" ]] && continue
+                        run_cmd "Remove AUR Package" "yay -Rns --noconfirm $selected"
+                        ;;
+                    "List Installed Packages")
+                        list_cmd "Installed AUR Packages" "pacman -Qm"
+                        ;;
+                    "Package Info")
+                        read -p "Enter AUR package name: " pkg
+                        [[ -z "$pkg" ]] && continue
+                        list_cmd "AUR Package Info" "pacman -Qi $pkg"
+                        ;;
+                esac
             done
             ;;
-        "Search (AUR)")
-            read -p "Enter AUR package name to search: " pkg
-            [[ -z "$pkg" ]] && return
-            list_cmd "AUR Search Results" "yay -Ss $pkg"
-            ;;
-        "List Installed (AUR)")
-            list_cmd "Installed AUR Packages" "pacman -Qm"
-            ;;
-        "Install (Flatpak)")
-            read -p "Enter Flatpak package name to install: " pkg
-            [[ -z "$pkg" ]] && continue
-            run_cmd "Install Flatpak Package" "flatpak install -y $pkg"
-            ;;
-        "Remove (Flatpak)")
+        "Manage Flatpak")
             while true; do
-                selected=$(printf "Back\n%s" "$(flatpak list --app --columns=application)" | fzf_menu "Select a Flatpak package to remove" "Back" $(flatpak list --app --columns=application))
-                [[ "$selected" == "Back" || -z "$selected" ]] && break
-                run_cmd "Remove Flatpak Package" "flatpak uninstall -y $selected"
+                flatpak_choice=$(fzf_menu "Manage Flatpak Packages" \
+                    "Back                  | Return to Main Menu" \
+                    "Search Packages       | Search for available packages" \
+                    "Install Package       | Install a new package" \
+                    "Remove Package        | Remove an installed package" \
+                    "List Installed Packages| List all installed packages" \
+                    "Package Info          | Display detailed package info")
+
+                flatpak_display_name=$(echo "$flatpak_choice" | cut -d'|' -f1 | xargs)
+                case "$flatpak_display_name" in
+                    "Back")
+                        break
+                        ;;
+                    "Search Packages")
+                        search_and_select_package "Flatpak" "flatpak search" "flatpak install -y"
+                        ;;
+                    "Install Package")
+                        read -p "Enter Flatpak package name to install: " pkg
+                        [[ -z "$pkg" ]] && continue
+                        run_cmd "Install Flatpak Package" "flatpak install -y $pkg"
+                        ;;
+                    "Remove Package")
+                        selected=$(printf "Back\n%s" "$(flatpak list --app --columns=application)" | fzf_menu "Select a Flatpak package to remove" "Back" $(flatpak list --app --columns=application))
+                        [[ "$selected" == "Back" || -z "$selected" ]] && continue
+                        run_cmd "Remove Flatpak Package" "flatpak uninstall -y $selected"
+                        ;;
+                    "List Installed Packages")
+                        list_cmd "Installed Flatpak Packages" "flatpak list"
+                        ;;
+                    "Package Info")
+                        read -p "Enter Flatpak package name: " pkg
+                        [[ -z "$pkg" ]] && continue
+                        list_cmd "Flatpak Package Info" "flatpak info $pkg"
+                        ;;
+                esac
             done
-            ;;
-        "Search (Flatpak)")
-            read -p "Enter Flatpak package name to search: " pkg
-            [[ -z "$pkg" ]] && return
-            list_cmd "Flatpak Search Results" "flatpak search $pkg"
-            ;;
-        "List Installed (Flatpak)")
-            list_cmd "Installed Flatpak Packages" "flatpak list"
             ;;
         "Install Generic Kernel")
             run_cmd "Install Generic Kernel" "sudo pacman -S --noconfirm linux linux-headers"
@@ -382,7 +414,7 @@ while true; do
         "Recent Removals")
             recent_pkg_removal
             ;;
-        "Service Manager")
+        "Manage Services")
             service_manager
             ;;
         "System Health")
