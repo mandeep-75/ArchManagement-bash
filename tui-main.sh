@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Source the core functions
-source /home/neeraj/.config/scripts/core_functions.sh
+source /home/neeraj/.config/scripts/core_functions
 
 # Optional colors for terminal output.
 DARK_GREEN="\e[32;1m"

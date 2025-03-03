@@ -1,42 +1,48 @@
 #!/bin/bash
 
 # Define paths
-SCRIPT_DIR="$HOME/.config/scripts"
-BIN_DIR="$HOME/.local/bin"
+INSTALL_DIR="$HOME/.config/scripts"
+FILE_NAME=${BASH_SOURCE[0]}
 DESKTOP_DIR="$HOME/.local/share/applications"
-ICON_DIR="$HOME/.local/share/icons"
 
-# Function to log messages
-log() {
-    echo -e "\e[1;32m[INFO]\e[0m $1"
-}
+#!/bin/bash
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+echo "Current script directory: $script_dir"
 
+echo $BIN_DIR
 clear  # Clear the terminal before running
 
-log "Starting installation..."
+echo "Starting installation..."
 
 # Ensure directories exist
-mkdir -p "$BIN_DIR" "$DESKTOP_DIR" "$ICON_DIR"
+echo "Creating necessary directories..."
+mkdir -p "$SCRIPT_DIR"  "$DESKTOP_DIR" 
+
+# Check if script files exist before proceeding
+if [[ ! -f "$SCRIPT_DIR/tui-main.sh" || ! -f "$SCRIPT_DIR/core_functions.sh" || ! -f "$SCRIPT_DIR/ArchManagement.desktop" || ! -f "$SCRIPT_DIR/ArchManagement.png" ]]; then
+    echo "Error: One or more required files are missing in $SCRIPT_DIR"
+    echo "Please ensure these files exist before running the script."
+    exit 1
+fi
 
 # Copy scripts to local bin
-log "Copying scripts..."
-cp "$SCRIPT_DIR/tui-main.sh" "$BIN_DIR/tui-main"
-cp "$SCRIPT_DIR/core_functions.sh" "$BIN_DIR/core_functions"
+echo "Copying scripts..."
+cp "$SCRIPT_DIR/tui-main.sh" "$INSTALL_DIR/tui-main"
+cp "$SCRIPT_DIR/core_functions.sh" "$INSTALL_DIR/core_functions"
 
 # Make scripts executable
-log "Setting executable permissions..."
-chmod +x "$BIN_DIR/tui-main" "$BIN_DIR/core_functions"
+echo "Setting executable permissions..."
+chmod +x "$INSTALL_DIR/tui-main" "$INSTALL_DIR/core_functions"
 
 # Install .desktop file
-log "Installing .desktop file..."
+echo "Installing .desktop file..."
 cp "$SCRIPT_DIR/ArchManagement.desktop" "$DESKTOP_DIR/"
 
-# Install icon
-log "Installing icon..."
-cp "$SCRIPT_DIR/ArchManagement.png" "$ICON_DIR/"
 
+echo "Installing icon..."
+cp "$SCRIPT_DIR/ArchManagement.png" "$INSTALL_DIR/"
 # Update desktop database
-log "Updating desktop database..."
+echo "Updating desktop database..."
 update-desktop-database "$DESKTOP_DIR"
 
-log "Installation completed successfully! ✅"
+echo "Installation completed successfully! ✅"
