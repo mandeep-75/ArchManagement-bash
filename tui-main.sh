@@ -72,13 +72,13 @@ fzf_menu() {
     
     # Write the preview script that displays help for the selected option
     cat > "$preview_script" << 'EOF'
-#!/bin/bash
+
 option="$1"
 
-# Navigation help always shown
-echo -e "↑/↓: Navigate | ↵: Select | Esc: Back |Hold Ctrl+C: Exit\n"
 
-# Show option-specific help if available
+echo -e "↑/↓: Navigate | ↵: Select | Esc: Back |Hold Ctrl+C: Exit |Made by Mandeep Singh\n"
+
+
 if [[ -n "$option" ]]; then
     if [[ "$option" == "Back" ]]; then
         echo "Return to previous menu"
