@@ -2,21 +2,17 @@
 
 # Define paths
 INSTALL_DIR="$HOME/.config/scripts"
-FILE_NAME=${BASH_SOURCE[0]}
 DESKTOP_DIR="$HOME/.local/share/applications"
 
 #!/bin/bash
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 echo "Current script directory: $script_dir"
 
-echo $BIN_DIR
-clear  # Clear the terminal before running
-
 echo "Starting installation..."
 
 # Ensure directories exist
 echo "Creating necessary directories..."
-mkdir -p "$SCRIPT_DIR"  "$DESKTOP_DIR" 
+sudo mkdir -p "$SCRIPT_DIR"  "$DESKTOP_DIR" "$INSTALL_DIR"
 
 # Check if script files exist before proceeding
 if [[ ! -f "$SCRIPT_DIR/tui-main.sh" || ! -f "$SCRIPT_DIR/core_functions.sh" || ! -f "$SCRIPT_DIR/ArchManagement.desktop" || ! -f "$SCRIPT_DIR/ArchManagement.png" ]]; then
@@ -27,20 +23,20 @@ fi
 
 # Copy scripts to local bin
 echo "Copying scripts..."
-cp "$SCRIPT_DIR/tui-main.sh" "$INSTALL_DIR/tui-main"
-cp "$SCRIPT_DIR/core_functions.sh" "$INSTALL_DIR/core_functions"
+sudo cp "$SCRIPT_DIR/tui-main.sh" "$INSTALL_DIR"
+sudo cp "$SCRIPT_DIR/core_functions.sh" "$INSTALL_DIR"
 
 # Make scripts executable
 echo "Setting executable permissions..."
-chmod +x "$INSTALL_DIR/tui-main" "$INSTALL_DIR/core_functions"
+sudo chmod +x "$INSTALL_DIR/tui-main.sh" "$INSTALL_DIR/core_functions.sh"
 
 # Install .desktop file
 echo "Installing .desktop file..."
-cp "$SCRIPT_DIR/ArchManagement.desktop" "$DESKTOP_DIR/"
+sudo cp "$SCRIPT_DIR/ArchManagement.desktop" "$DESKTOP_DIR/"
 
 
 echo "Installing icon..."
-cp "$SCRIPT_DIR/ArchManagement.png" "$INSTALL_DIR/"
+sudo cp "$SCRIPT_DIR/ArchManagement.png" "$INSTALL_DIR/"
 # Update desktop database
 echo "Updating desktop database..."
 update-desktop-database "$DESKTOP_DIR"
