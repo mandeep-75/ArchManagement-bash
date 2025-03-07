@@ -199,7 +199,7 @@ search_and_select_package() {
             results=$(pacman -Ss "$pkg" | awk '/^[a-zA-Z0-9\-\.]+/ {print $1}' | fzf --prompt="Select a package to install > " --header="$HEADER_LINE" --border --margin=2,4 --layout=reverse --ansi --multi --tiebreak=index --height=100%)
             ;;
         "AUR")
-            results=$(yay -Ss "$pkg" | awk '/^[a-zA-Z0-9\-\.]+/ {print $1}' | fzf --prompt="Select a package to install > " --header="$HEADER_LINE" --border --margin=2,4 --layout=reverse --ansi --multi --tiebreak=index --height=100%)
+            results=$(paru -Ss "$pkg" | awk '/^[a-zA-Z0-9\-\.]+/ {print $1}' | fzf --prompt="Select a package to install > " --header="$HEADER_LINE" --border --margin=2,4 --layout=reverse --ansi --multi --tiebreak=index --height=100%)
             ;;
         "Flatpak")
             results=$(flatpak search "$pkg" | awk '/^[a-zA-Z0-9\-\.]+/ {print $1}' | fzf --prompt="Select a package to install > " --header="$HEADER_LINE" --border --margin=2,4 --layout=reverse --ansi --multi --tiebreak=index --height=100%)
@@ -253,7 +253,7 @@ while true; do
             run_cmd "Update Official Packages" "sudo pacman -Syu --noconfirm"
 
             echo -e "${DARK_GREEN}Updating AUR Packages...${RESET}"
-            run_cmd "Update AUR Packages" "yay -Syu --noconfirm"
+            run_cmd "Update AUR Packages" "paru -Syu --noconfirm"
 
             echo -e "${DARK_GREEN}Updating Flatpak Packages...${RESET}"
             run_cmd "Update Flatpak Packages" "flatpak update -y"
@@ -262,7 +262,7 @@ while true; do
             run_cmd "Update Official Packages" "sudo pacman -Syu --noconfirm"
             ;;
         "Update AUR")
-            run_cmd "Update AUR Packages" "yay -Syu --noconfirm"
+            run_cmd "Update AUR Packages" "paru -Syu --noconfirm"
             ;;
         "Update Flatpak")
             run_cmd "Update Flatpak Packages" "flatpak update -y"
@@ -322,17 +322,17 @@ while true; do
                         break
                         ;;
                     "Search Packages")
-                        search_and_select_package "AUR" "yay -Ss" "yay -S --noconfirm"
+                        search_and_select_package "AUR" "paru -Ss" "paru -S --noconfirm"
                         ;;
                     "Install Package")
                         read -p "Enter AUR package name to install: " pkg
                         [[ -z "$pkg" ]] && continue
-                        run_cmd "Install AUR Package" "yay -S --noconfirm $pkg"
+                        run_cmd "Install AUR Package" "paru -S --noconfirm $pkg"
                         ;;
                     "Remove Package")
                         selected=$(printf "Back\n%s" "$(pacman -Qm | awk '{print $1}')" | fzf_menu "Select an AUR package to remove" "Back" $(pacman -Qm | awk '{print $1}'))
                         [[ "$selected" == "Back" || -z "$selected" ]] && continue
-                        run_cmd "Remove AUR Package" "yay -Rns --noconfirm $selected"
+                        run_cmd "Remove AUR Package" "paru -Rns --noconfirm $selected"
                         ;;
                     "List Installed Packages")
                         list_cmd "Installed AUR Packages" "pacman -Qm"
