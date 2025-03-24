@@ -1,25 +1,19 @@
 #!/bin/bash
-
 # Source the core functions
 source "$HOME/.config/scripts/core_functions.sh"
-
 # Optional colors for terminal output.
 DARK_GREEN="\e[32;1m"
 DARK_YELLOW="\e[33;1m"
 DARK_RED="\e[31;1m"
 DARK_CYAN="\e[36;1m"
 RESET="\e[0m"
-
 # ASCII Art and Visual Elements
 BORDER="║"
 HEADER_LINE="══════════════════════════════════════════════════"
-
 # fzf configuration with safe color usage
 FZF_OPTS="--height=100% --border=rounded --margin=2,4 --layout=reverse --ansi"
-
 # Handle Ctrl+C to exit the script
 trap "echo -e '\n${DARK_RED}Exiting... Goodbye!${RESET}'; exit 0" SIGINT
-
 # Define help descriptions for menu options
 HELP_UPDATE_SYSTEM="Update all system packages (pacman, AUR, and flatpak) to the latest versions. Ensures your system is secure and up-to-date with the latest features."
 HELP_UPDATE_PACMAN="Update only official Arch Linux packages from repositories using pacman. Safe way to keep core system components current."
@@ -47,7 +41,6 @@ HELP_MEMORY_USAGE="Show current RAM and swap usage statistics. Check if your sys
 HELP_CPU_INFO="Display detailed processor information including model, cores, architecture and capabilities."
 HELP_NETWORK_INFO="View network interfaces with their IP addresses and status. Check your network configuration."
 HELP_EXIT="Exit this system management utility and return to the shell."
-
 # fzf_menu: Displays a menu using fzf with dynamic help box
 fzf_menu() {
     local prompt="$1"
@@ -55,25 +48,20 @@ fzf_menu() {
     local options=("$@")
     local choice
     local default_help="↑/↓: Navigate | ↵: Select | Esc: Back | Hold Ctrl+C: Exit"
-
     # Create a temporary file for the preview script
     local preview_script=$(mktemp)
     chmod +x "$preview_script"
-
     # Write the preview script that displays help for the selected option
     cat > "$preview_script" << 'EOF'
 #!/bin/bash
 option="$1"
 display_name=$(echo "$option" | cut -d'|' -f1 | xargs)
-
 echo -e "↑/↓: Navigate | ↵: Select | Esc: Back | Hold Ctrl+C: Exit | Made by Mandeep Singh\n"
-
 if [[ -n "$display_name" ]]; then
     if [[ "$display_name" == "Back" ]]; then
         echo "Return to previous menu"
     else
         echo -e "\033[1mHelp:\033[0m"
-
         # Map display name to help variable
         case "$display_name" in
             "Update System")
@@ -161,7 +149,6 @@ if [[ -n "$display_name" ]]; then
     fi
 fi
 EOF
-
     # Export all help variables
     export HELP_UPDATE_SYSTEM HELP_UPDATE_PACMAN HELP_UPDATE_AUR HELP_UPDATE_FLATPAK
     export HELP_MANAGE_PACMAN HELP_MANAGE_AUR HELP_MANAGE_FLATPAK
@@ -170,29 +157,23 @@ EOF
     export HELP_SYSTEM_CLEANUP HELP_RECENT_REMOVAL HELP_SERVICE_MANAGER HELP_SYSTEM_HEALTH
     export HELP_PROCESS_MONITOR HELP_HARDWARE_INFO HELP_DISK_USAGE HELP_MEMORY_USAGE
     export HELP_CPU_INFO HELP_NETWORK_INFO HELP_EXIT
-
     # Execute fzf with the preview script
     choice=$(printf "%s\n" "${options[@]}" | fzf --prompt "$prompt > " \
         $FZF_OPTS \
         --preview="$preview_script {}" \
         --preview-window=down:30%:wrap)
-
     # Clean up the temporary file
     rm -f "$preview_script"
-
     [[ $? -eq 130 ]] && exit 0 # Exit if Ctrl+C is pressed inside fzf
     echo "$choice"
 }
-
 # Function to search and select a package using fzf
 search_and_select_package() {
     local pkg_manager="$1"
     local search_cmd="$2"
     local install_cmd="$3"
-
     read -p "Enter package name to search: " pkg
     [[ -z "$pkg" ]] && return
-
     local results
     case "$pkg_manager" in
         "Pacman")
@@ -205,7 +186,6 @@ search_and_select_package() {
             results=$(flatpak search "$pkg" | awk '/^[a-zA-Z0-9\-\.]+/ {print $1}' | fzf --prompt="Select a package to install > " --header="$HEADER_LINE" --border --margin=2,4 --layout=reverse --ansi --multi --tiebreak=index --height=100%)
             ;;
     esac
-
     if [[ -n "$results" ]]; then
         selected_pkg=$(echo "$results" | head -n 1)
         run_cmd "Install Package" "$install_cmd $selected_pkg"
@@ -213,9 +193,7 @@ search_and_select_package() {
         echo "No packages found."
     fi
 }
-
 # Rest of the script remains the same...
-
 while true; do
    choice=$(fzf_menu "Main Menu" \
     "Update System              | Updates       | update full" \
@@ -245,16 +223,13 @@ while true; do
     "Network Info               | Monitoring    | network" \
     "Exit                       | System        | exit quit" \
 )
-
     display_name=$(echo "$choice" | cut -d'|' -f1 | xargs)
     case "$display_name" in
         "Update System")
             echo -e "${DARK_GREEN}Updating Pacman Packages...${RESET}"
             run_cmd "Update Official Packages" "sudo pacman -Syu --noconfirm"
-
             echo -e "${DARK_GREEN}Updating AUR Packages...${RESET}"
             run_cmd "Update AUR Packages" "paru -Syu --noconfirm"
-
             echo -e "${DARK_GREEN}Updating Flatpak Packages...${RESET}"
             run_cmd "Update Flatpak Packages" "flatpak update -y"
             ;;
@@ -276,7 +251,6 @@ while true; do
                     "Remove Package        | Remove an installed package" \
                     "List Installed Packages| List all installed packages" \
                     "Package Info          | Display detailed package info")
-
                 pkg_display_name=$(echo "$pkg_choice" | cut -d'|' -f1 | xargs)
                 case "$pkg_display_name" in
                     "Back")
@@ -297,11 +271,13 @@ while true; do
                         ;;
                     "List Installed Packages")
                         list_cmd "Installed Packages" "pacman -Qqe"
+                        read -p "Press any key to continue..."
                         ;;
                     "Package Info")
                         read -p "Enter package name: " pkg
                         [[ -z "$pkg" ]] && continue
                         list_cmd "Package Info" "pacman -Qi $pkg"
+                        read -p "Press any key to continue..."
                         ;;
                 esac
             done
@@ -315,7 +291,6 @@ while true; do
                     "Remove Package        | Remove an installed package" \
                     "List Installed Packages| List all installed packages" \
                     "Package Info          | Display detailed package info")
-
                 aur_display_name=$(echo "$aur_choice" | cut -d'|' -f1 | xargs)
                 case "$aur_display_name" in
                     "Back")
@@ -336,11 +311,13 @@ while true; do
                         ;;
                     "List Installed Packages")
                         list_cmd "Installed AUR Packages" "pacman -Qm"
+                        read -p "Press any key to continue..."
                         ;;
                     "Package Info")
                         read -p "Enter AUR package name: " pkg
                         [[ -z "$pkg" ]] && continue
                         list_cmd "AUR Package Info" "pacman -Qi $pkg"
+                        read -p "Press any key to continue..."
                         ;;
                 esac
             done
@@ -354,7 +331,6 @@ while true; do
                     "Remove Package        | Remove an installed package" \
                     "List Installed Packages| List all installed packages" \
                     "Package Info          | Display detailed package info")
-
                 flatpak_display_name=$(echo "$flatpak_choice" | cut -d'|' -f1 | xargs)
                 case "$flatpak_display_name" in
                     "Back")
@@ -375,11 +351,13 @@ while true; do
                         ;;
                     "List Installed Packages")
                         list_cmd "Installed Flatpak Packages" "flatpak list"
+                        read -p "Press any key to continue..."
                         ;;
                     "Package Info")
                         read -p "Enter Flatpak package name: " pkg
                         [[ -z "$pkg" ]] && continue
                         list_cmd "Flatpak Package Info" "flatpak info $pkg"
+                        read -p "Press any key to continue..."
                         ;;
                 esac
             done
@@ -425,18 +403,23 @@ while true; do
             ;;
         "Hardware Info")
             list_cmd "Hardware Info" "lscpu && lsblk && free -h"
+            read -p "Press any key to continue..."
             ;;
         "Disk Usage")
             list_cmd "Disk Usage" "df -h"
+            read -p "Press any key to continue..."
             ;;
         "Memory Usage")
             list_cmd "Memory Usage" "free -h"
+            read -p "Press any key to continue..."
             ;;
         "CPU Info")
             list_cmd "CPU Info" "lscpu"
+            read -p "Press any key to continue..."
             ;;
         "Network Info")
             list_cmd "Network Info" "ip a"
+            read -p "Press any key to continue..."
             ;;
         "Exit")
             echo -e "\n${DARK_CYAN}Exiting... Goodbye!${RESET}"

@@ -1,11 +1,10 @@
 #!/bin/bash
-
 # Core Functions
 
 # check_deps: Check for required tools and install missing ones.
 check_deps() {
     local missing=()
-    for dep in hwinfo reflector fzf; do
+    for dep in hwinfo reflector fzf yay flatpak; do
         if ! command -v "$dep" &>/dev/null; then
             missing+=("$dep")
         fi
@@ -64,10 +63,10 @@ restore_repos() {
     read -n 1 -s -r -p "Press any key to continue..."
 }
 
-# update_mirrors: Update the mirrorlist using rate-mirrors.
+# update_mirrors: Update the mirrorlist using reflector.
 update_mirrors() {
-    echo -e "\n${DARK_GREEN}Updating mirrorlist using rate-mirrors with verbose logging...${RESET}"
-    RUST_LOG=trace rate-mirrors --protocol https arch | sudo tee /etc/pacman.d/mirrorlist
+    echo -e "\n${DARK_GREEN}Updating mirrorlist using reflector...${RESET}"
+    sudo reflector --latest 20 --protocol https --sort rate --save /etc/pacman.d/mirrorlist
     echo -e "\n${DARK_GREEN}Mirrorlist updated successfully.${RESET}"
     read -n 1 -s -r -p "Press any key to continue..."
 }
@@ -154,11 +153,9 @@ run_cmd() {
         confirm_flag=0
         shift
     fi
-
     local title="$1"
     shift
     local cmd="$*"
-
     if [[ $confirm_flag -eq 1 ]]; then
         local confirm
         confirm=$(fzf_menu "Execute $title?" "Yes" "No")
@@ -167,7 +164,6 @@ run_cmd() {
             return
         fi
     fi
-
     clear
     echo -e "\n${DARK_CYAN}=== $title ===${RESET}"
     echo -e "${DARK_GREEN}Command:${RESET} $cmd"
@@ -539,7 +535,6 @@ recent_pkg_removal() {
         if [[ "$choice" == "Return" || -z "$choice" ]]; then
             break
         fi
-
         case "$choice" in
             "Last 30 Minutes") delta=1800 ;;
             "Last 1 Hour") delta=3600 ;;
@@ -552,10 +547,8 @@ recent_pkg_removal() {
             "Last 2 Days") delta=172800 ;;
             "Last 5 Days") delta=432000 ;;
         esac
-
         now=$(date +%s)
         threshold=$((now - delta))
-
         pkgs=$(awk -v thresh="$threshold" '
         BEGIN { FS="[][]"; }
         /installed/ && $0 !~ /upgraded/ {
@@ -569,29 +562,23 @@ recent_pkg_removal() {
               print pkg;
           }
         }' /var/log/pacman.log | sort -u)
-
         if [[ -z "$pkgs" ]]; then
             echo -e "\n${DARK_YELLOW}No packages installed in the selected time range.${RESET}"
             read -n 1 -s -r -p "Press any key to continue..."
             continue
         fi
-
         IFS=$'\n' read -d '' -r -a pkg_array <<< "$pkgs"
-
         echo -e "\nPackages installed in the selected time range:"
         for i in "${!pkg_array[@]}"; do
             printf "%d) %s\n" $((i+1)) "${pkg_array[$i]}"
         done
-
         read -p "Enter package numbers to exclude (space or comma separated) or type 'n' to cancel: " exclude_input
         if [[ "${exclude_input,,}" == "n" ]]; then
             echo "Operation canceled."
             read -n 1 -s -r -p "Press any key to continue..."
             continue
         fi
-
         exclude_indices=($(parse_exclusion_input "$exclude_input"))
-
         remove_pkgs=()
         for i in "${!pkg_array[@]}"; do
             skip=false
@@ -605,25 +592,21 @@ recent_pkg_removal() {
                 remove_pkgs+=("${pkg_array[$i]}")
             fi
         done
-
         if [ ${#remove_pkgs[@]} -eq 0 ]; then
             echo -e "\n${DARK_YELLOW}No packages left after applying exclusions.${RESET}"
             read -n 1 -s -r -p "Press any key to continue..."
             continue
         fi
-
         echo -e "\nThe following packages will be removed:"
         for pkg in "${remove_pkgs[@]}"; do
             echo "$pkg"
         done
-
         read -p "Are you sure you want to remove these packages? (y/n): " confirm
         if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
             echo "Operation canceled."
             read -n 1 -s -r -p "Press any key to continue..."
             continue
         fi
-
         pkg_list=$(printf "%s " "${remove_pkgs[@]}")
         run_cmd --no-confirm "Remove Recent Packages" "sudo pacman -Rns --noconfirm $pkg_list"
     done
